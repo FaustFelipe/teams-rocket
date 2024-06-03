@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Alert, FlatList, TextInput } from 'react-native';
 import { Container, Form, HeaderList, NumbersOfPlayers } from './styles';
-import { useRoute } from '@react-navigation/native'
+import { useRoute, useNavigation } from '@react-navigation/native'
 
 import { Header } from '@components/Header';
 import { Hightlight } from '@components/Highlight';
@@ -18,6 +18,7 @@ import { playerGetByGroup } from '@storage/player/playerGetByGroup';
 import { playerGetByGroupAndTeam } from '@storage/player/playerGetByGroupAndTeam';
 import { PlayerStorageDTO } from '@storage/player/PlayerStorageDTO';
 import { playerRemoveByGroup } from '@storage/player/playerRemoveByGroup';
+import { groupRemoveByName } from '@storage/group/groupRemoveByName';
 
 type RouteParams = {
     group: string;
@@ -28,6 +29,7 @@ export function Players() {
     const [team, setTeam] = useState('Time 1')
     const [players, setPlayers] = useState<PlayerStorageDTO[]>([])
 
+    const navigation = useNavigation();
     const route = useRoute();
     const { group } = route.params as RouteParams;
 
@@ -72,6 +74,33 @@ export function Players() {
         } catch (error) {
             console.log(error);
         }
+    }
+
+    async function groupRemove() {
+        try {
+            await groupRemoveByName(group);
+            navigation.navigate('groups');
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function handleRemoveGroup() {
+        Alert.alert(
+            'Remover turma', 
+            'Tem certeza que deseja remover a turma?',
+            [
+                {
+                    text: 'Cancelar',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Remover',
+                    style: 'destructive',
+                    onPress: groupRemove
+                }
+            ]
+        );
     }
 
     useEffect(() => {
@@ -144,6 +173,7 @@ export function Players() {
             <Button
                 title='Remover Turma'
                 type='SECONDARY'
+                onPress={handleRemoveGroup}
             />
         </Container>
     )
