@@ -14,6 +14,10 @@ export const Logo = styled.Image`
 `;
 
 export const BackButton = styled.TouchableHighlight`
+    border-radius: 20px;
+`;
+
+export const BackButtonSpace = styled.View`
     flex: 1;
 `;
 

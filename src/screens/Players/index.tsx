@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FlatList } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { Alert, FlatList, TextInput } from 'react-native';
 import { Container, Form, HeaderList, NumbersOfPlayers } from './styles';
 import { useRoute } from '@react-navigation/native'
 
@@ -11,17 +11,72 @@ import { Filter } from '@components/Filter';
 import { PlayerCard } from '@components/PlayerCard';
 import { EmptyList } from '@components/EmptyList';
 import { Button } from '@components/Button';
+import { AppError } from '@utils/AppError';
+
+import { playerAddByGroup } from '@storage/player/playerAddByGroup';
+import { playerGetByGroup } from '@storage/player/playerGetByGroup';
+import { playerGetByGroupAndTeam } from '@storage/player/playerGetByGroupAndTeam';
+import { PlayerStorageDTO } from '@storage/player/PlayerStorageDTO';
+import { playerRemoveByGroup } from '@storage/player/playerRemoveByGroup';
 
 type RouteParams = {
     group: string;
 }
 
 export function Players() {
-
+    const [newPlayer, setNewPlayer] = useState('');
     const [team, setTeam] = useState('Time 1')
-    const [players, setPlayers] = useState(['Felipe', 'Alexandre'])
+    const [players, setPlayers] = useState<PlayerStorageDTO[]>([])
+
     const route = useRoute();
     const { group } = route.params as RouteParams;
+
+    const newPlayerInputRef = useRef<TextInput>(null);
+
+    async function handleAddNewPlayer() {
+        if (newPlayer.trim().length === 0) { return; }
+
+        const player = {
+            name: newPlayer,
+            team: team
+        }
+
+        try {
+            await playerAddByGroup(player, group);
+            fetchPlayersByTeam();
+            setNewPlayer('');
+            newPlayerInputRef.current?.blur();
+        } catch (error) {
+            if (error instanceof AppError) {
+                Alert.alert('Novo jogador', error.message);
+            } else {
+                console.log(error);
+                Alert.alert('Novo jogador', 'Não foi possível adicionar o jogador');
+            }
+        }
+    }
+
+    async function fetchPlayersByTeam() {
+        try {
+            const playersByTeam = await playerGetByGroupAndTeam(group, team);
+            setPlayers(playersByTeam);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function handleRemovePlayer(playerName: string) {
+        try {
+            await playerRemoveByGroup(playerName, group);
+            fetchPlayersByTeam();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    useEffect(() => {
+        fetchPlayersByTeam();
+    }, [team])
 
     return (
         <Container >
@@ -33,15 +88,23 @@ export function Players() {
             />
             <Form>
                 <Input
+                    inputRef={newPlayerInputRef}    
+                    onChangeText={setNewPlayer}
                     placeholder='Nome da pessoa'
                     autoCorrect={false}
+                    value={newPlayer}
+                    onSubmitEditing={handleAddNewPlayer}
+                    returnKeyType='done'
                 />
-                <ButtonIcon icon='add' />
+                <ButtonIcon 
+                    icon='add' 
+                    onPress={handleAddNewPlayer}
+                />
             </Form>
 
             <HeaderList>
                 <FlatList
-                    data={['Time 1', 'Time 2', 'Time 3', 'Time 4', 'Time 5']}
+                    data={['Time 1', 'Time 2']}
                     keyExtractor={item => item}
                     renderItem={({ item }) => (
                         <Filter
@@ -59,11 +122,11 @@ export function Players() {
 
             <FlatList 
                 data={players}
-                keyExtractor={item => item}
+                keyExtractor={item => item.name}
                 renderItem={({ item }) => (
                     <PlayerCard 
-                        name={item}
-                        onRemove={() => {console.log('remove')}}
+                        name={item.name}
+                        onRemove={() => {handleRemovePlayer(item.name)}}
                     />
                 )}
                 ListEmptyComponent={() => (

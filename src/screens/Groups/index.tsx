@@ -50,7 +50,7 @@ export function Groups() {
             onPress={() => handleOpenGroup(item)}
           />
         )}
-        contentContainerStyle={groups.length === 0 && { flex: 1 }}
+        contentContainerStyle={[{ paddingBottom: 100 }, groups.length === 0 && { flex: 1 }]}
         ListEmptyComponent={() => <EmptyList message={'Nenhuma turma encontrada'} />}
       />
 
