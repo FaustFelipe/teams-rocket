@@ -11,6 +11,7 @@ import { Filter } from '@components/Filter';
 import { PlayerCard } from '@components/PlayerCard';
 import { EmptyList } from '@components/EmptyList';
 import { Button } from '@components/Button';
+import { Loading } from '@components/Loading';
 import { AppError } from '@utils/AppError';
 
 import { playerAddByGroup } from '@storage/player/playerAddByGroup';
@@ -25,6 +26,7 @@ type RouteParams = {
 }
 
 export function Players() {
+    const [isLoading, setIsLoading] = useState(true);
     const [newPlayer, setNewPlayer] = useState('');
     const [team, setTeam] = useState('Time 1')
     const [players, setPlayers] = useState<PlayerStorageDTO[]>([])
@@ -60,10 +62,13 @@ export function Players() {
 
     async function fetchPlayersByTeam() {
         try {
+            setIsLoading(true);
             const playersByTeam = await playerGetByGroupAndTeam(group, team);
             setPlayers(playersByTeam);
         } catch (error) {
             console.log(error);
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -87,7 +92,7 @@ export function Players() {
 
     async function handleRemoveGroup() {
         Alert.alert(
-            'Remover turma', 
+            'Remover turma',
             'Tem certeza que deseja remover a turma?',
             [
                 {
@@ -117,7 +122,7 @@ export function Players() {
             />
             <Form>
                 <Input
-                    inputRef={newPlayerInputRef}    
+                    inputRef={newPlayerInputRef}
                     onChangeText={setNewPlayer}
                     placeholder='Nome da pessoa'
                     autoCorrect={false}
@@ -125,8 +130,8 @@ export function Players() {
                     onSubmitEditing={handleAddNewPlayer}
                     returnKeyType='done'
                 />
-                <ButtonIcon 
-                    icon='add' 
+                <ButtonIcon
+                    icon='add'
                     onPress={handleAddNewPlayer}
                 />
             </Form>
@@ -149,26 +154,29 @@ export function Players() {
                 </NumbersOfPlayers>
             </HeaderList>
 
-            <FlatList 
-                data={players}
-                keyExtractor={item => item.name}
-                renderItem={({ item }) => (
-                    <PlayerCard 
-                        name={item.name}
-                        onRemove={() => {handleRemovePlayer(item.name)}}
+            {
+                isLoading ? <Loading /> :
+                    <FlatList
+                        data={players}
+                        keyExtractor={item => item.name}
+                        renderItem={({ item }) => (
+                            <PlayerCard
+                                name={item.name}
+                                onRemove={() => { handleRemovePlayer(item.name) }}
+                            />
+                        )}
+                        ListEmptyComponent={() => (
+                            <EmptyList
+                                message={'Nenhum jogador encontrado'}
+                            />
+                        )}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={[
+                            { paddingBottom: 100 },
+                            players.length === 0 && { flex: 1 }
+                        ]}
                     />
-                )}
-                ListEmptyComponent={() => (
-                    <EmptyList
-                        message={'Nenhum jogador encontrado'}
-                    />
-                )}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={[
-                    { paddingBottom: 100 },
-                    players.length === 0 && { flex: 1 }
-                ]}
-            />
+            }
 
             <Button
                 title='Remover Turma'
